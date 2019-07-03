@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Canvas</title>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        canvas {
+            border: black solid thin;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const canvasW = canvas.width = window.innerWidth;
+        const canvasH = canvas.height = window.innerHeight;
+        const patterns = [];
+
+        let mouseX;
+        let mouseY;
+
+        function Pattern(x, y, w, h) {
+            this.x = x;
+            this.y = y;
+            this.w = 1;
+            this.h = 1;
+            this.maxW = w;
+            this.maxH = h;
+        }
+
+        Pattern.prototype.draw = function() {
+            ctx.beginPath();
+            ctx.rect(this.x, this.y, this.w, this.h);
+            ctx.stroke();
+        }
+
+        Pattern.prototype.grow = function() {
+            this.draw();
+            if(this.w < this.maxW) {
+                this.w += 2;
+            }
+            if(this.h < this.maxH) {
+                this.h += 2;
+            }
+        }
+
+        Pattern.prototype.initSize = function() {
+            this.draw();
+            if(this.w > 1) {
+                this.w -= .2;
+            }
+            if(this.h > 1) {
+                this.h -= .2;
+            }
+        }
+
+        function createPatterns(nXItems, nYItems) {
+
+            let xItems = canvasW/nXItems;
+            let yItems = canvasH/nYItems;
+            let posX = 0;
+            let posY = 0;
+
+            for(let i = 0; i < nXItems; i++) {
+                posY = 0;
+                for(let j = 0; j < nYItems; j++) {
+                    patterns.push(new Pattern(posX, posY, xItems, yItems));
+                    posY += yItems;
+                }
+                posX += xItems;
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvasW, canvasH);
+
+            
+
+            for(let i = 0; i < patterns.length; i++) {
+                // patterns[i].draw();
+
+                if( mouseX > patterns[i].x - patterns[i].maxW
+                 && mouseX < patterns[i].x + patterns[i].maxW * 2
+                 && mouseY > patterns[i].y - patterns[i].maxH
+                 && mouseY < patterns[i].y + patterns[i].maxH * 2
+                ) {
+                    patterns[i].grow();
+                } else {
+                    patterns[i].initSize();
+                }
+
+
+            }
+        }
+
+        createPatterns(100, 50);
+
+        function anim() {
+            draw();
+            window.requestAnimationFrame(anim);
+        }
+        window.requestAnimationFrame(anim);
+
+        canvas.addEventListener('mousemove', function(e) {
+            mouseX = e.pageX;
+            mouseY = e.pageY;
+        });
+
+    </script>
+</body>
+
+</html>
