@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -14,43 +15,83 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
+            font-family: monospace;
         }
-
         canvas {
             border: black solid thin;
+        }
+        form {
+        	width: 300px;
+        	padding: 20px;
+        }
+        .flex {
+        	display: flex;
         }
     </style>
 </head>
 
 <body>
-    <canvas id="canvas"></canvas>
+	<div class="flex">
+	    <canvas id="canvas"></canvas>
+	    <form>
+	    	<p><strong>styles</strong></p>
+	    	<div>
+	    		<input type="radio" name="style" value="squad" checked>
+	    		squad
+	    	</div>
+	    	<div>
+	    		<input type="radio" name="style" value="circle">
+	    		circle
+	    	</div>
+	    	<div>
+	    		<input type="radio" name="style" value="line">
+	    		line
+	    	</div>
+	    </form>
+    </div>
     <script>
-
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        const canvasW = canvas.width = window.innerWidth;
+        const canvasW = canvas.width = (window.innerWidth - 300);
         const canvasH = canvas.height = window.innerHeight;
-        const patterns = [];
-
+        let patterns = [];
         let mouseX;
         let mouseY;
 
-        function Pattern(x, y, w, h) {
+        const inputsRadio = document.getElementsByTagName('input');
+        for( let i = 0; i < inputsRadio.length; i++ ) {
+        	inputsRadio[i].addEventListener('change', function() {
+        		patterns = [];
+        		createPatterns(100, 50, this.value);
+        	});
+        }
+
+        function Pattern(x, y) {
             this.x = x;
             this.y = y;
+        }
+
+        /* Squad */
+
+        function PatternSquad(x, y, w, h) {
+        	Pattern.call(this, x, y);
             this.w = 1;
             this.h = 1;
             this.maxW = w;
             this.maxH = h;
         }
 
-        Pattern.prototype.draw = function() {
+        PatternSquad.prototype = Object.create(Pattern.prototype);
+
+        PatternSquad.prototype.constructor = PatternSquad;
+
+        PatternSquad.prototype.draw = function() {
             ctx.beginPath();
             ctx.rect(this.x, this.y, this.w, this.h);
             ctx.stroke();
         }
 
-        Pattern.prototype.grow = function() {
+        PatternSquad.prototype.grow = function() {
             this.draw();
             if(this.w < this.maxW) {
                 this.w += 2;
@@ -60,27 +101,113 @@
             }
         }
 
-        Pattern.prototype.initSize = function() {
+        PatternSquad.prototype.shrink = function() {
             this.draw();
             if(this.w > 1) {
-                this.w -= .2;
+                this.w -= .1;
             }
             if(this.h > 1) {
-                this.h -= .2;
+                this.h -= .1;
             }
         }
 
-        function createPatterns(nXItems, nYItems) {
+        /* Circle */
 
+        function PatternCircle(x, y, rw, rh) {
+        	Pattern.call(this, x, y);
+            this.r = 1;
+            this.maxW = rw / 2;
+            this.maxH = rh / 2;
+        }
+
+        PatternCircle.prototype = Object.create(Pattern.prototype);
+
+        PatternCircle.prototype.constructor = PatternCircle;
+
+        PatternCircle.prototype.draw = function() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.r, 0, 2 * Math.PI);
+            ctx.stroke();
+        }
+
+        PatternCircle.prototype.grow = function() {
+            this.draw();
+            if(this.r < this.maxW) {
+                this.r += 2;
+            }
+        }
+
+        PatternCircle.prototype.shrink = function() {
+            this.draw();
+            if(this.r > 1) {
+                this.r = this.r - .1;
+            }
+        }
+
+        /* Line */
+
+        function PatternLine(x, y, w, h) {
+        	Pattern.call(this, x, y);
+            this.w = 1;
+            this.h = 1;
+            this.maxW = w;
+            this.maxH = h;
+        }
+
+        PatternLine.prototype = Object.create(Pattern.prototype);
+
+        PatternLine.prototype.constructor = PatternLine;
+
+        PatternLine.prototype.draw = function() {
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y);
+			ctx.lineTo(this.x + this.w, this.y + this.h);
+            ctx.stroke();
+        }
+
+        PatternLine.prototype.grow = function() {
+            this.draw();
+            if(this.w < this.maxW) {
+                this.w += 2;
+            }
+            if(this.h < this.maxH) {
+                this.h += 2;
+            }
+        }
+
+        PatternLine.prototype.shrink = function() {
+            this.draw();
+            if(this.w > 1) {
+                this.w -= .1;
+            }
+            if(this.h > 1) {
+                this.h -= .1;
+            }
+        }
+
+        /* -------------------- */
+
+        function createPatterns(nXItems, nYItems, patternClass) {
             let xItems = canvasW/nXItems;
             let yItems = canvasH/nYItems;
             let posX = 0;
             let posY = 0;
-
             for(let i = 0; i < nXItems; i++) {
                 posY = 0;
                 for(let j = 0; j < nYItems; j++) {
-                    patterns.push(new Pattern(posX, posY, xItems, yItems));
+
+                	switch (patternClass) {
+                		case 'line':
+                			patterns.push(new PatternLine(posX, posY, xItems, yItems));
+                			break;
+                		case 'circle':
+                			patterns.push(new PatternCircle(posX, posY, xItems, yItems));
+                			break;
+                		default:
+                			patterns.push(new PatternSquad(posX, posY, xItems, yItems));
+                			break;
+                	}
+
                     posY += yItems;
                 }
                 posX += xItems;
@@ -89,12 +216,9 @@
 
         function draw() {
             ctx.clearRect(0, 0, canvasW, canvasH);
-
             
-
             for(let i = 0; i < patterns.length; i++) {
                 // patterns[i].draw();
-
                 if( mouseX > patterns[i].x - patterns[i].maxW
                  && mouseX < patterns[i].x + patterns[i].maxW * 2
                  && mouseY > patterns[i].y - patterns[i].maxH
@@ -102,10 +226,8 @@
                 ) {
                     patterns[i].grow();
                 } else {
-                    patterns[i].initSize();
+                    patterns[i].shrink();
                 }
-
-
             }
         }
 
@@ -115,6 +237,7 @@
             draw();
             window.requestAnimationFrame(anim);
         }
+
         window.requestAnimationFrame(anim);
 
         canvas.addEventListener('mousemove', function(e) {
